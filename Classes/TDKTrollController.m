@@ -202,7 +202,8 @@ static void dictionaryValueApplier(const void *key, const void *value, void *con
         [self.delegate trollDrop:self startingDropToPerson:[TDKPerson personWithNode:node]];
     }
 
-    CGDataProviderRef dataProvider = CGDataProviderCreateWithData(NULL, __trollface, __trollface_len, NULL);
+    CFTypeRef _Nullable cfURL = CFBridgingRetain(fileURL);
+    CGDataProviderRef dataProvider = CGDataProviderCreateWithURL(cfURL);
     CGImageRef fileIcon = CGImageCreateWithJPEGDataProvider(dataProvider, NULL, false, kCGRenderingIntentDefault);
 
     TDKSFOperationRef operation = TDKSFOperationCreate(kCFAllocatorDefault, kTDKSFOperationKindSender, NULL, NULL);
@@ -213,6 +214,7 @@ static void dictionaryValueApplier(const void *key, const void *value, void *con
     TDKSFOperationSetDispatchQueue(operation, dispatch_get_main_queue());
     TDKSFOperationResume(operation);
 
+    CFRelease(cfURL);
     CGImageRelease(fileIcon);
     CGDataProviderRelease(dataProvider);
 
