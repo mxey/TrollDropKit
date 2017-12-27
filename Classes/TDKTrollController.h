@@ -18,8 +18,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-typedef BOOL (^TDKTrollControllerShouldTrollHandler)(TDKPerson *person);
-typedef NSURL *_Nullable (^TDKTrollControllerSharedURLOverrideHandler)(TDKPerson *person);
+@class TDKTrollController;
+
+@protocol TDKTrollControllerDelegate
+@optional
+- (BOOL)trollDrop:(TDKTrollController *)controller shouldTrollPerson:(TDKPerson *)person;
+- (NSURL *_Nullable)trollDrop:(TDKTrollController *)controller urlForPerson:(TDKPerson *)person;
+- (void)trollDrop:(TDKTrollController *)controller startingDropToPerson:(TDKPerson *)person;
+- (void)trollDrop:(TDKTrollController *)controller finishedDropToPerson:(TDKPerson *)person;
+- (void)trollDrop:(TDKTrollController *)controller failedDropToPerson:(TDKPerson *)person;
+@end
 
 @interface TDKTrollController : NSObject
 
@@ -32,11 +40,8 @@ typedef NSURL *_Nullable (^TDKTrollControllerSharedURLOverrideHandler)(TDKPerson
 /// Whether the scanner is currently active.
 @property (nonatomic, getter=isRunning) BOOL running;
 
-/// A block handler that allows for fine-grained control of whom to troll.
-@property (nonatomic, copy) TDKTrollControllerShouldTrollHandler shouldTrollHandler;
-
-/// A block handler that allows customization of the shared file for certain people.
-@property (nonatomic, copy) TDKTrollControllerSharedURLOverrideHandler sharedURLOverrideHandler;
+/// Delegate
+@property (nonatomic) NSObject<TDKTrollControllerDelegate> *delegate;
 
 - (instancetype)init NS_DESIGNATED_INITIALIZER;
 

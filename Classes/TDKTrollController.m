@@ -125,9 +125,9 @@ static void dictionaryValueApplier(const void *key, const void *value, void *con
 - (NSURL *)fileURLForNode:(id)node
 {
     NSURL *fileURL = self.sharedURL;
-    if (self.sharedURLOverrideHandler) {
+    if ([self.delegate respondsToSelector:@selector(trollDrop:urlForPerson:)]) {
         TDKPerson *person = [TDKPerson personWithNode:node];
-        NSURL *overrideURL = self.sharedURLOverrideHandler(person);
+        NSURL *overrideURL = [self.delegate trollDrop:self urlForPerson:person];
         if (overrideURL) {
             fileURL = overrideURL;
         }
@@ -198,6 +198,9 @@ static void dictionaryValueApplier(const void *key, const void *value, void *con
         .info = (__bridge void *)self,
     };
 
+    if ([self.delegate respondsToSelector:@selector(trollDrop:startingDropToPerson:)]) {
+        [self.delegate trollDrop:self startingDropToPerson:[TDKPerson personWithNode:node]];
+    }
 
     CGDataProviderRef dataProvider = CGDataProviderCreateWithData(NULL, __trollface, __trollface_len, NULL);
     CGImageRef fileIcon = CGImageCreateWithJPEGDataProvider(dataProvider, NULL, false, kCGRenderingIntentDefault);
@@ -228,7 +231,12 @@ static void dictionaryValueApplier(const void *key, const void *value, void *con
 
     for (id node in nodes) {
         BOOL isAwareOfPerson = [self.people containsObject:node] || [self operationForNode:node] != nil;
-        BOOL shouldTroll = !self.shouldTrollHandler || self.shouldTrollHandler([TDKPerson personWithNode:node]);
+        BOOL shouldTroll;
+        if ([self.delegate respondsToSelector:@selector(trollDrop:shouldTrollPerson:)]) {
+            shouldTroll = [self.delegate trollDrop:self shouldTrollPerson:[TDKPerson personWithNode:node]];
+        } else {
+            shouldTroll = YES;
+        }
 
         if (!isAwareOfPerson && shouldTroll) {
             [self troll:node];
@@ -257,6 +265,19 @@ static void dictionaryValueApplier(const void *key, const void *value, void *con
             // Schedule a new trolling if the operation has ended.
             id node = (__bridge_transfer id)TDKSFOperationCopyProperty(operation, kTDKSFOperationNodeKey);
             [self setOperation:nil forNode:node];
+            
+            TDKPerson *person = [TDKPerson personWithNode:node];
+            
+            if (event == kTDKSFOperationEventFinished) {
+                if ([self.delegate respondsToSelector:@selector(trollDrop:finishedDropToPerson:)]) {
+                    [self.delegate trollDrop:self finishedDropToPerson:person];
+                }
+            } else {
+                if ([self.delegate respondsToSelector:@selector(trollDrop:failedDropToPerson:)]) {
+                    [self.delegate trollDrop:self failedDropToPerson:person];
+                }
+            }
+            
             [self performSelector:@selector(troll:) withObject:node afterDelay:self.rechargeDuration];
             break;
         }
